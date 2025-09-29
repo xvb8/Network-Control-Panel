@@ -1,5 +1,5 @@
 
-# python -m PyInstaller --onefile --windowed --uac-admin --icon=NCP.ico --add-data "data.json;." NCP.py
+# python -m PyInstaller --onefile --uac-admin --icon=NCP.ico NCP.py
 
 import tkinter as tk
 from tkinter import messagebox

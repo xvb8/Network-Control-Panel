@@ -18,6 +18,52 @@ toggle_vars_out = []
 checkbox_frame = tk.Frame(root)
 checkbox_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
+def delete_firewall_rules():
+    """Deletes all firewall rules starting with [Network_Control_Panel"""
+    try:
+        # Get all rules that start with "[Network_Control_Panel"
+        result = subprocess.run(
+            'netsh advfirewall firewall show rule name=all',
+            shell=True, capture_output=True, text=True
+        )
+        rules = result.stdout.splitlines()
+        for line in rules:
+            if line.strip().startswith("Rule Name: [Network_Control_Panel"):
+                rule_name = line.strip().replace("Rule Name: ", "")
+                cmd = f'netsh advfirewall firewall delete rule name="{rule_name}"'
+                try:
+                    subprocess.run(cmd, shell=True, check=True)
+                    print(f"Deleted firewall rule: {rule_name}")
+                except subprocess.CalledProcessError as e:
+                    print(f"Failed to delete rule {rule_name}: {e}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Error deleting firewall rules: {e}")
+
+def clear_all_data():
+    """Clears all entries from data.json after confirming with the user."""
+    if not os.path.exists("data.json"):
+        messagebox.showinfo("No Data", "data.json does not exist, nothing to clear.")
+        return
+
+    confirm = messagebox.askyesno(
+        "Confirm Clear",
+        "Are you sure you want to clear all data? This cannot be undone."
+    )
+    if not confirm:
+        return
+    
+    delete_firewall_rules()  # Delete all related firewall rules
+
+    # Clear the JSON file
+    with open("data.json", "w") as f:
+        json.dump({"blocked_dangerousfiles": []}, f, indent=2)
+
+    messagebox.showinfo("Data Cleared", "All data has been cleared.")
+    refresh_checkboxes()  # Refresh the UI checkboxes
+
+clear_btn = tk.Button(root, text="Clear All Data", command=clear_all_data,)
+clear_btn.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+
 def safe_rule_name(dfile_path):
     filename = os.path.basename(dfile_path)  # just the file name
     short_hash = hashlib.md5(dfile_path.encode()).hexdigest()[:6]

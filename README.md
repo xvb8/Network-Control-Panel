@@ -8,3 +8,4 @@ To block a folder, click select folder and select the folder. The path should po
 
 
 Licensed under MIT
+

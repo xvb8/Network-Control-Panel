@@ -7,5 +7,12 @@ The inbound checkbox allows you to block data coming in from the internet to tha
 To block a folder, click select folder and select the folder. The path should pop up, with two checkboxes and a delete button.
 If you close it while it's running, open Network Control Panel and click Clear All Data. This should have deleted the firewall rules also, but double check by opening Windows Firewall with Advanced Security and make sure there are no rules (in inbound or outbound) starting with "[Network_Control_Panel". Alternatively, you can manually cut the JSON file and the firewall rules to not delete everything, but be careful.
 
+## Installation
+
+I have provided complied executables for you, but they may trigger antiviruses. If you want to compile the Python code directly from source (so you can read the code), do the following:
+
+1. Make sure you have pyinstaller installed. Run "pip install pyinstaller"
+2. Compile the code. If you want the terminal to show, use "python -m PyInstaller --onefile --windowed --uac-admin --icon=NCP.ico NCP.py" If you want it hidden, use "python -m PyInstaller --onefile --uac-admin --icon=NCP.ico NCP.py"
+
 Licensed under MIT
 

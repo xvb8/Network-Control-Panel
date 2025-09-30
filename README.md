@@ -5,6 +5,8 @@ The executable is located under src. Keep in mind it requires admin privileges s
 
 The source code and related files can also be found here. The executable is standalone, AS LONG AS YOU INCLUDE THE DATA.JSON, meaning you can take it out of this folder (with the data.json).
 
+Use discretion and do not select a folder with too many files.
+
 The inbound checkbox allows you to block data coming in from the internet to that folder. The outbound checkbox allows you to block it from sending data over the internet. This is all done via Windows Firewall, and thus will only work for Windows.
 
 To block a folder, click select folder and select the folder. The path should pop up, with two checkboxes and a delete button.
@@ -23,5 +25,6 @@ I have provided complied executables for you, but they may trigger antiviruses. 
 Use anytime you want to block a folder from having internet access. If you have a program you think is selling your data, take steps to prevent it by blocking the program folder. Just be careful, if internet is absolutely essential, you might want to re-enable internet before using.
 
 Licensed under MIT
+
 
 

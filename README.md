@@ -18,6 +18,10 @@ I have provided complied executables for you, but they may trigger antiviruses. 
 1. Make sure you have pyinstaller installed. Run "pip install pyinstaller"
 2. Compile the code. If you want the terminal to show, use "python -m PyInstaller --onefile --windowed --uac-admin --icon=NCP.ico NCP.py" If you want it hidden, use "python -m PyInstaller --onefile --uac-admin --icon=NCP.ico NCP.py"
 
+## Use Cases
+
+Use anytime you want to block a folder from having internet access. If you have a program you think is selling your data, take steps to prevent it by blocking the program folder. Just be careful, if internet is absolutely essential, you might want to re-enable internet before using.
+
 Licensed under MIT
 
 

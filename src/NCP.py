@@ -13,53 +13,90 @@ import hashlib
 
 root = tk.Tk()
 
+RUNNABLE_EXTS = (
+    '.exe', '.exe1', '.dll', '.com', '.bat', '.cmd', '.msi', '.msp', '.msu',
+    '.msc', '.mst', '.bin', '.app', '.ins', '.isu', '.paf',     # binaries / installers / updates
+    '.scr', '.pif', '.inf1', '.shb', '.shs',                                                      # screensaver / program info
+    '.lnk', '.scf', '.inf', '.job', '.jse', '.lnk', '.ps1', '.sct', '.u3p',                                             # shortcuts / shell command / setup scripts
+    '.cpl', '.msc',                                                       # control panel / MMC snap-in
+    '.ocx', '.sys', '.drv',                                               # components / drivers
+    '.reg', '.rgs',                                                               # registry import
+    '.jar',                                                                # Java
+    '.ps1', '.psm1', '.psd1', '.ps1xml',                                   # PowerShell
+    '.vbs', '.vbe', '.js', '.jse', '.vb', 'vbscript',                                        # VBScript / JScript
+    '.wsf', '.wsh', '.wsc', '.ws',                                         # Windows Script Host & components
+    '.hta', '.gadget',                                                     # HTML applications / gadgets
+    '.py', '.pyw',                                                          # Python
+    '.pl', '.pm',                                                           # Perl (scripts / modules)
+    '.rb',                                                                  # Ruby
+    '.php',                                                                 # PHP scripts (if PHP interpreter present)
+    '.sh', '.shb', '.sct',                                                                # shell scripts (WSL/Cygwin/GitBash)
+    '.ps1xml',                                                              # powershell xml
+)
+
+
 toggle_vars_in = []
 toggle_vars_out = []
 checkbox_frame = tk.Frame(root)
 checkbox_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky="w")
 
 def delete_firewall_rules():
-    """Deletes all firewall rules starting with [Network_Control_Panel"""
+    """
+    Deletes all Windows Firewall rules whose names start with '[Network_Control_Panel'.
+    Only rules with this prefix are targeted and removed.
+    """
     try:
-        # Get all rules that start with "[Network_Control_Panel"
-        result = subprocess.run(
-            'netsh advfirewall firewall show rule name=all',
-            shell=True, capture_output=True, text=True
-        )
-        rules = result.stdout.splitlines()
-        for line in rules:
-            if line.strip().startswith("Rule Name: [Network_Control_Panel"):
-                rule_name = line.strip().replace("Rule Name: ", "")
+        # Get all rules
+        result = subprocess.run('netsh advfirewall firewall show rule name=all', shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            # netsh may write errors to stdout/stderr; show whichever is present
+            err = (result.stderr or result.stdout).strip()
+            print(f"Failed to list firewall rules: {err}")
+            return
+
+        for line in result.stdout.splitlines():
+            line_str = line.strip()
+            # lines look like: "Rule Name:    [Network_Control_Panel(in)]Block_xxx"
+            if line_str.startswith("Rule Name:") and "[Network_Control_Panel" in line_str:
+                # extract the part after the first ':' and strip any padding
+                parts = line_str.split(':', 1)
+                if len(parts) < 2:
+                    continue
+                rule_name = parts[1].strip()
                 cmd = f'netsh advfirewall firewall delete rule name="{rule_name}"'
-                try:
-                    subprocess.run(cmd, shell=True, check=True)
+                proc = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if proc.returncode == 0:
                     print(f"Deleted firewall rule: {rule_name}")
-                except subprocess.CalledProcessError as e:
-                    print(f"Failed to delete rule {rule_name}: {e}")
+                else:
+                    output = (proc.stdout or proc.stderr).strip()
+                    print(f"Failed to delete rule {rule_name}: {output}")
     except Exception as e:
         messagebox.showerror("Error", f"Error deleting firewall rules: {e}")
 
 def clear_all_data():
-    """Clears all entries from data.json after confirming with the user."""
-    if not os.path.exists("data.json"):
-        messagebox.showinfo("No Data", "data.json does not exist, nothing to clear.")
-        return
+    try:
+        """Clears all entries from data.json after confirming with the user."""
+        if not os.path.exists("data.json"):
+            messagebox.showinfo("No Data", "data.json does not exist, nothing to clear.")
+            return
 
-    confirm = messagebox.askyesno(
-        "Confirm Clear",
-        "Are you sure you want to clear all data? This cannot be undone."
-    )
-    if not confirm:
-        return
-    
-    delete_firewall_rules()  # Delete all related firewall rules
+        confirm = messagebox.askyesno(
+            "Confirm Clear",
+            "Are you sure you want to clear all data? This cannot be undone."
+        )
+        if not confirm:
+            return
+        
+        delete_firewall_rules()  # Delete all related firewall rules
 
-    # Clear the JSON file
-    with open("data.json", "w") as f:
-        json.dump({"blocked_dangerousfiles": []}, f, indent=2)
+        # Clear the JSON file
+        with open("data.json", "w") as f:
+            json.dump({"blocked_dangerousfiles": []}, f, indent=2)
 
-    messagebox.showinfo("Data Cleared", "All data has been cleared.")
-    refresh_checkboxes()  # Refresh the UI checkboxes
+        messagebox.showinfo("Data Cleared", "All data has been cleared.")
+        refresh_checkboxes()  # Refresh the UI checkboxes
+    except Exception as e:
+        messagebox.showerror("Error", f"Error clearing data: {e}")
 
 clear_btn = tk.Button(root, text="Clear All Data", command=clear_all_data,)
 clear_btn.grid(row=0, column=1, padx=10, pady=10, sticky="w")
@@ -216,12 +253,13 @@ def add_block_rule(folder_to_block):
         for file in files:
             # show each file considered (optional, can be noisy)
             # print(f"Considering file: {file}")
-            print(f"Considering file: {file}")
-            dfile_path = os.path.join(root, file)
-            dfile_path = dfile_path.replace("\\\\", "\\")
-            print(f"Found dangerousfile: {dfile_path}")
-            dangerousfiles.append(dfile_path)
-    
+            if file.lower().endswith(RUNNABLE_EXTS):
+                print(f"Considering file: {file}")
+                dfile_path = os.path.join(root, file)
+                dfile_path = dfile_path.replace("\\\\", "\\")
+                print(f"Found dangerousfile: {dfile_path}")
+                dangerousfiles.append(dfile_path)
+        
     if len(dangerousfiles) == 0:
         messagebox.showinfo(
            "No dangerousfiles Found",
